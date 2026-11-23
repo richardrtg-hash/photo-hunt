@@ -506,7 +506,7 @@ body.assigning .mission:hover { background: var(--day-soft); transform: translat
 
 .nav {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
-  display: grid; grid-template-columns: repeat(5, 1fr);
+  display: grid; grid-template-columns: repeat(6, 1fr);
   height: calc(var(--nav-h) + env(safe-area-inset-bottom));
   padding: 6px max(6px, env(safe-area-inset-left)) env(safe-area-inset-bottom);
   background: var(--card); border-top: 3px solid var(--line);
@@ -521,7 +521,7 @@ body.assigning .mission:hover { background: var(--day-soft); transform: translat
 .nav a.on { color: var(--ink); background: var(--day-soft); }
 .nav a.on .nav-icon { transform: translateY(-2px) scale(1.12); }
 @media (min-width: 720px) {
-  .nav { left: 50%; right: auto; transform: translateX(-50%); bottom: 12px; width: 560px; height: var(--nav-h); border: 3px solid var(--line); border-radius: 22px; box-shadow: var(--pop); padding: 6px; }
+  .nav { left: 50%; right: auto; transform: translateX(-50%); bottom: 12px; width: 640px; height: var(--nav-h); border: 3px solid var(--line); border-radius: 22px; box-shadow: var(--pop); padding: 6px; }
   .tray { bottom: calc(var(--nav-h) + 24px); }
   .nav a { font-size: 0.8rem; }
 }
@@ -638,3 +638,23 @@ a.week-card:hover { transform: translateX(4px); }
 .wk-emoji { font-size: 2rem; }
 .wk-scores { display: flex; gap: var(--space-md); flex-wrap: wrap; }
 .wk-scores > span { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; }
+
+/* ---------- photo gallery ---------- */
+
+.gallery-filters { display: grid; gap: var(--space-md); justify-items: start; }
+.filter-row { display: flex; gap: var(--space-sm); overflow-x: auto; max-width: 100%; padding: 2px 2px 6px; scrollbar-width: thin; }
+.fchip {
+  flex-shrink: 0; min-height: 42px; padding: 6px 14px;
+  font-weight: 600; font-size: 0.92rem; white-space: nowrap;
+  background: var(--card); border: 2.5px solid var(--line); border-radius: 999px;
+}
+.fchip.on { background: var(--pc, var(--day)); box-shadow: var(--pop-sm); }
+.gallery-day { display: grid; gap: var(--space-lg); }
+.gallery-date { display: flex; align-items: center; gap: var(--space-sm); flex-wrap: wrap; font-size: 1.25rem; }
+.gallery-date .dot { width: 16px; height: 16px; border-radius: 50%; background: var(--c); border: 2px solid var(--line); }
+.gallery-date small { font-family: var(--font-body); font-size: 0.85rem; font-weight: 600; }
+.gallery-date small a { color: var(--ink-soft); }
+.polaroid { position: relative; }
+.pbadge { position: absolute; top: -12px; left: -10px; z-index: 1; transform: rotate(-8deg); }
+.lightbox figcaption .avatar { margin-right: 2px; }
+@media (max-width: 420px) { .nav { padding-left: 2px; padding-right: 2px; } .nav a { margin: 0 1px; font-size: 0.62rem; white-space: nowrap; letter-spacing: -0.01em; } .nav-icon { font-size: 1.3rem; } }

@@ -7,6 +7,7 @@ An interactive version of the printable *7 Day Photo Scavenger Hunt* that keeps 
 - Multiple players, each with an emoji buddy and color, plus a live leaderboard and scoreboard
 - **End-of-day upload**: pick all of a day's camera photos at once, then tap a photo and tap the mission it belongs to
 - Photos are shrunk on the device (DSLR 15 MB → about 300 KB) and kept **on this device only**
+- **🖼️ Photos tab**: every photo by day, for one player or the whole family, filtered by week, with **Download all (.zip)** sorted into player and week folders
 - Special Daily Challenges: a golden hunt that changes every week (turkey, star, elf…), Mystery Photo, Photographer's Choice and Kindness. Sunrise & Sunset Club is added automatically.
 - Works offline and can be installed with "Add to Home Screen"
 
@@ -86,4 +87,5 @@ Then open <http://localhost:8080>.
 | `js/store.js` | On-device storage (IndexedDB). A Google Drive backend could plug in here later. |
 | `js/photos.js` | Shrinks photos before saving |
 | `js/fx.js` | Confetti and celebrations |
+| `js/zip.js` | Builds the photo .zip downloads |
 | `sw.js`, `manifest.webmanifest`, `icons/` | Offline support and Home Screen install |

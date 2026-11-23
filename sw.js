@@ -1,9 +1,9 @@
 // Offline support. App files: network first (so updates show up), cache as fallback.
 // Google Fonts: cache first.
-const CACHE = 'photo-hunt-v2';
+const CACHE = 'photo-hunt-v3';
 const SHELL = [
   './', './index.html', './css/styles.css', './manifest.webmanifest',
-  './js/app.js', './js/missions.js', './js/calendar.js', './js/weeks-december.js', './js/evergreen.js', './js/store.js', './js/photos.js', './js/fx.js',
+  './js/app.js', './js/missions.js', './js/calendar.js', './js/weeks-december.js', './js/evergreen.js', './js/store.js', './js/photos.js', './js/fx.js', './js/zip.js',
   './icons/icon.svg', './icons/icon-180.png', './icons/icon-192.png', './icons/icon-512.png',
 ];
 

@@ -3,6 +3,7 @@ import * as cal from './calendar.js';
 import * as store from './store.js';
 import { processImage, PhotoError, blobToDataUrl, dataUrlToBlob } from './photos.js';
 import { confetti, bigCelebration, pointsPop, countUp } from './fx.js';
+import { makeZip } from './zip.js';
 
 /* ---------- helpers ---------- */
 
@@ -66,6 +67,8 @@ const ui = {
   pendingMission: null,
   lastToggled: null,
   shownScores: {},
+  galleryPlayer: null, // player id or 'all'
+  galleryWeek: 'all',
 };
 const thumbUrls = new Map();
 
@@ -174,6 +177,7 @@ function render() {
       case 'w': html = validWeekId(a) && weekVisible(a) ? viewWeek(cal.getWeek(a)) : viewHome(); navKey = 'calendar'; break;
       case 'scoreboard': html = viewScoreboard(validWeekId(a) && weekVisible(a) ? a : currentWeekId()); break;
       case 'calendar': html = viewCalendar(); break;
+      case 'photos': html = viewGallery(); break;
       case 'players': html = viewPlayers(); break;
       case 'grownups': html = viewGrownups(); break;
       case 'rules': html = viewRules(); break;
@@ -238,6 +242,7 @@ function renderNav(active) {
   const items = [
     ['home', '#/', '🏠', 'Home'],
     ['today', dayHref(currentWeekId(), todayDayIndex()), '📸', 'Today'],
+    ['photos', '#/photos', '🖼️', 'Photos'],
     ['scoreboard', '#/scoreboard', '🏆', 'Scores'],
     ['calendar', '#/calendar', '📅', 'Calendar'],
     ['grownups', '#/grownups', '🔑', 'Grown-ups'],
@@ -381,7 +386,7 @@ function viewHome() {
     <span class="muted">${daysToNext <= 1 ? 'Get ready!' : `${plural(daysToNext, 'day')} to go. It's a secret until then!`}</span></span>
   </a>
 
-  <p class="home-links"><a href="#/calendar" class="link">📖 Memory book &amp; calendar</a><a href="#/rules" class="link">📜 Rules &amp; specials</a><a href="#/players" class="link">🧒 Players</a></p>`;
+  <p class="home-links"><a href="#/photos" class="link">🖼️ All photos</a><a href="#/calendar" class="link">📖 Memory book &amp; calendar</a><a href="#/rules" class="link">📜 Rules &amp; specials</a><a href="#/players" class="link">🧒 Players</a></p>`;
 }
 
 function viewWeek(w) {
@@ -497,14 +502,14 @@ function viewAlbum(w, day) {
   <section class="day-head compact">
     <div class="day-nav">
       <a href="${dayHref(w.id, day)}" class="pill">← Back to missions</a>
-      <span class="when">${esc(cal.fmt(d.date))}</span><span></span>
+      <span class="when">${esc(cal.fmt(d.date))}</span><a href="#/photos" class="pill">All photos →</a>
     </div>
     <h1 class="display">${esc(p.name)}'s album</h1>
     <p class="lead">${plural(items.length, 'photo')} from ${esc(d.title)} · ${esc(w.name)}</p>
   </section>
   ${items.length ? `<div class="album">
     ${items.map((m, i) => `
-      <button class="polaroid" style="--tilt:${((i * 37) % 7) - 3}deg" data-action="open-photo" data-mission="${m.id}">
+      <button class="polaroid" style="--tilt:${((i * 37) % 7) - 3}deg" data-action="open-photo" data-mission="${m.id}" data-pid="${p.id}">
         ${thumbImg(rec(p.id, m.id).photoId, m.text)}
         <span class="cap"><b>${m.label}</b> ${esc(m.text)}</span>
       </button>`).join('')}
@@ -514,6 +519,111 @@ function viewAlbum(w, day) {
       <p class="muted">Tap <b>📸 Upload photos</b> on the missions page to add the day's pictures from your camera.</p>
       <a class="btn" href="${dayHref(w.id, day)}">Go to missions</a>
     </div>`}`;
+}
+
+/** Every photo the chosen player(s) have, newest day first. */
+function collectPhotos(pids, weekFilter) {
+  const items = [];
+  for (const pid of pids) {
+    for (const [mid, r] of Object.entries(state.progress[pid] || {})) {
+      if (!r.photoId) continue;
+      let m;
+      try { m = cal.missionById(mid); } catch { m = null; }
+      if (!m || (weekFilter !== 'all' && m.weekId !== weekFilter)) continue;
+      const week = cal.getWeek(m.weekId);
+      items.push({ pid, m, week, day: week.days[m.day - 1], photoId: r.photoId });
+    }
+  }
+  return items.sort((a, b) => b.day.date.localeCompare(a.day.date) || a.m.num - b.m.num || a.pid.localeCompare(b.pid));
+}
+
+function viewGallery() {
+  if (ui.galleryPlayer !== 'all' && !playerById(ui.galleryPlayer)) ui.galleryPlayer = state.currentPlayerId;
+  const showAll = ui.galleryPlayer === 'all';
+  const pids = showAll ? state.players.map((p) => p.id) : [ui.galleryPlayer];
+  const weekIds = cal.unlockedWeekIds(todayISO()).reverse();
+  if (ui.galleryWeek !== 'all' && !weekIds.includes(ui.galleryWeek)) ui.galleryWeek = 'all';
+  const items = collectPhotos(pids, ui.galleryWeek);
+  const who = showAll ? 'Family' : playerById(ui.galleryPlayer).name;
+
+  // group by day
+  const groups = [];
+  for (const it of items) {
+    const g = groups[groups.length - 1];
+    if (g && g.date === it.day.date) g.items.push(it);
+    else groups.push({ date: it.day.date, week: it.week, day: it.day, items: [it] });
+  }
+
+  return `
+  <section class="page-head">
+    <p class="eyebrow">${plural(items.length, 'photo')}</p>
+    <h1 class="display">${esc(who)} photo gallery</h1>
+  </section>
+
+  <div class="gallery-filters">
+    <div class="filter-row" role="group" aria-label="Whose photos">
+      ${state.players.length > 1 ? `<button class="fchip ${showAll ? 'on' : ''}" data-action="gallery-player" data-id="all" aria-pressed="${showAll}">👨‍👩‍👧 Everyone</button>` : ''}
+      ${state.players.map((p) => `<button class="fchip ${ui.galleryPlayer === p.id ? 'on' : ''}" style="--pc:${p.color}" data-action="gallery-player" data-id="${p.id}" aria-pressed="${ui.galleryPlayer === p.id}">${esc(p.emoji)} ${esc(p.name)}</button>`).join('')}
+    </div>
+    <div class="filter-row" role="group" aria-label="Which week">
+      <button class="fchip ${ui.galleryWeek === 'all' ? 'on' : ''}" data-action="gallery-week" data-id="all" aria-pressed="${ui.galleryWeek === 'all'}">All weeks</button>
+      ${weekIds.map((id) => { const w = cal.getWeek(id); return `<button class="fchip ${ui.galleryWeek === id ? 'on' : ''}" data-action="gallery-week" data-id="${id}" aria-pressed="${ui.galleryWeek === id}">${w.emoji} ${esc(w.name)}</button>`; }).join('')}
+    </div>
+    ${items.length ? `<button class="btn" data-action="download-zip">⬇️ Download ${items.length === 1 ? 'this photo' : `all ${items.length} photos`} (.zip)</button>` : ''}
+  </div>
+
+  ${groups.length ? groups.map((g) => `
+    <section class="gallery-day">
+      <h2 class="gallery-date"><span class="dot" style="--c:${g.day.color}"></span>${esc(cal.fmt(g.date, { weekday: 'long', month: 'short', day: 'numeric' }))}
+        <small><a href="${dayHref(g.week.id, g.day.day)}">${g.week.emoji} ${esc(g.day.title)}</a></small></h2>
+      <div class="album">
+        ${g.items.map((it, i) => {
+          const pl = playerById(it.pid);
+          return `<button class="polaroid" style="--tilt:${((i * 37) % 7) - 3}deg" data-action="open-photo" data-mission="${it.m.id}" data-pid="${it.pid}">
+            ${showAll ? `<span class="pbadge">${avatar(pl, 'sm')}</span>` : ''}
+            ${thumbImg(it.photoId, it.m.text)}
+            <span class="cap"><b>${it.m.label}</b> ${esc(it.m.text)}</span>
+          </button>`;
+        }).join('')}
+      </div>
+    </section>`).join('') : `<div class="empty sticker">
+      <p class="big-emoji" aria-hidden="true">🖼️</p>
+      <p>No photos here yet.</p>
+      <p class="muted">Open a day and tap <b>📸 Upload photos</b> to add pictures from the camera.</p>
+      <a class="btn" href="${dayHref(currentWeekId(), todayDayIndex())}">Go to today's missions</a>
+    </div>`}`;
+}
+
+async function downloadZip() {
+  const showAll = ui.galleryPlayer === 'all';
+  const pids = showAll ? state.players.map((p) => p.id) : [ui.galleryPlayer];
+  const items = collectPhotos(pids, ui.galleryWeek);
+  if (!items.length) return;
+  toast(`Packing ${plural(items.length, 'photo')}…`);
+  const clean = (s) => s.replace(/[\\/:*?"<>|]+/g, '').replace(/\s+/g, ' ').trim().slice(0, 70);
+  const used = new Set();
+  const files = [];
+  for (const it of items) {
+    const ph = await store.getPhoto(it.photoId);
+    if (!ph) continue;
+    const pl = playerById(it.pid);
+    let name = `${clean(pl.name)}/${it.week.id} ${clean(it.week.name)}/${it.day.date} ${it.m.label} ${clean(it.m.text)}.jpg`;
+    if (!showAll) name = name.slice(name.indexOf('/') + 1);
+    while (used.has(name)) name = name.replace(/\.jpg$/, ' (2).jpg');
+    used.add(name);
+    files.push({ name, blob: ph.full, date: ph.createdAt });
+  }
+  const zip = await makeZip(files);
+  const who = showAll ? 'family' : clean(playerById(ui.galleryPlayer).name).replace(/ /g, '-');
+  const which = ui.galleryWeek === 'all' ? 'all-weeks' : ui.galleryWeek;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(zip);
+  a.download = `photo-hunt-${who}-${which}.zip`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+  toast(`Downloaded ${plural(files.length, 'photo')} ✅`);
 }
 
 function weekPicker(selected, action) {
@@ -934,8 +1044,8 @@ async function toggleMission(missionId, btn) {
 }
 
 let lightboxUrl = null;
-async function openLightbox(missionId) {
-  const r = rec(state.currentPlayerId, missionId);
+async function openLightbox(missionId, pid = state.currentPlayerId) {
+  const r = rec(pid, missionId);
   if (!r?.photoId) return;
   const photo = await store.getPhoto(r.photoId);
   if (!photo) { toast('That photo is missing.', true); return; }
@@ -944,17 +1054,17 @@ async function openLightbox(missionId) {
   const dlg = $('#lightbox');
   if (lightboxUrl) URL.revokeObjectURL(lightboxUrl);
   lightboxUrl = URL.createObjectURL(photo.full);
-  const pl = player();
+  const pl = playerById(pid);
   const fileName = `${pl.name}-${w.days[m.day - 1].date}-${m.label}-${m.text}`.replace(/[^\w-]+/g, '_').slice(0, 90) + '.jpg';
   dlg.innerHTML = `
     <figure>
       <img src="${lightboxUrl}" alt="${esc(m.text)}">
-      <figcaption><span class="pts ${m.points === 20 ? 'bonus' : ''}">${m.points}</span> ${esc(cal.fmt(w.days[m.day - 1].date))} · <b>${m.label}</b> ${esc(m.text)}</figcaption>
+      <figcaption>${avatar(pl, 'sm')}<span class="pts ${m.points === 20 ? 'bonus' : ''}">${m.points}</span> ${esc(pl.name)} · ${esc(cal.fmt(w.days[m.day - 1].date))} · <b>${m.label}</b> ${esc(m.text)}</figcaption>
     </figure>
     <div class="lb-actions">
       <a class="btn small ghost" href="${lightboxUrl}" download="${esc(fileName)}">⬇️ Save</a>
-      <button class="btn small ghost" data-action="replace-photo" data-mission="${missionId}">🔁 Replace</button>
-      <button class="btn small danger" data-action="remove-photo" data-mission="${missionId}">🗑️ Remove</button>
+      ${pid === state.currentPlayerId ? `<button class="btn small ghost" data-action="replace-photo" data-mission="${missionId}">🔁 Replace</button>` : ''}
+      <button class="btn small danger" data-action="remove-photo" data-mission="${missionId}" data-pid="${pid}">🗑️ Remove</button>
       <button class="btn small" data-action="close-lightbox">Close</button>
     </div>`;
   dlg.showModal();
@@ -1075,6 +1185,7 @@ document.addEventListener('click', async (e) => {
   switch (el.dataset.action) {
     case 'select-player':
       state.currentPlayerId = el.dataset.id;
+      if (ui.galleryPlayer !== 'all') ui.galleryPlayer = el.dataset.id;
       commit();
       break;
     case 'toggle':
@@ -1088,10 +1199,21 @@ document.addEventListener('click', async (e) => {
       singleInput.click();
       break;
     case 'open-photo':
-      openLightbox(el.dataset.mission);
+      openLightbox(el.dataset.mission, el.dataset.pid || state.currentPlayerId);
+      break;
+    case 'gallery-player':
+      ui.galleryPlayer = el.dataset.id;
+      render();
+      break;
+    case 'gallery-week':
+      ui.galleryWeek = el.dataset.id;
+      render();
+      break;
+    case 'download-zip':
+      downloadZip().catch((err) => toast(`Download failed: ${err.message}`, true));
       break;
     case 'remove-photo': {
-      const r = rec(state.currentPlayerId, el.dataset.mission);
+      const r = rec(el.dataset.pid || state.currentPlayerId, el.dataset.mission);
       if (!r?.photoId || !confirm('Remove this photo? The mission stays checked.')) return;
       await removePhotoBlob(r.photoId);
       delete r.photoId;
