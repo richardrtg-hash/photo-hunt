@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Photo Scavenger Hunt</title>
+  <meta name="description" content="A 7-day family photo scavenger hunt: check off missions, upload photos and race up the scoreboard.">
+  <meta name="theme-color" content="#fff4dc">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Photo Hunt">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bagel+Fat+One&family=Lexend:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <a href="#/" class="brand" aria-label="Photo Scavenger Hunt home">
+      <span class="brand-mark" aria-hidden="true">📷</span>
+      <span class="brand-text">Photo Hunt<small>7-day championship</small></span>
+    </a>
+    <div id="player-bar"></div>
+  </header>
+
+  <main id="main" tabindex="-1"></main>
+
+  <aside id="tray" class="tray" hidden aria-label="Photos to place on missions"></aside>
+  <nav id="nav" class="nav" aria-label="Main"></nav>
+
+  <dialog id="lightbox" class="lightbox"></dialog>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <input id="single-input" type="file" accept="image/*" hidden>
+  <input id="bulk-input" type="file" accept="image/*" multiple hidden>
+  <input id="import-input" type="file" accept="application/json,.json" hidden>
+
+  <noscript><p style="padding:24px">This game needs JavaScript turned on.</p></noscript>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
