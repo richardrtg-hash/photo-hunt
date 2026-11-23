@@ -628,9 +628,9 @@ async function downloadZip() {
 
 function weekPicker(selected, action) {
   const ids = cal.unlockedWeekIds(todayISO()).reverse();
-  return `<label class="field inline week-pick"><span>Week</span>
+  return `<label class="field week-pick"><span>Pick a week</span>
     <select data-action-change="${action}">
-      ${ids.map((id) => { const w = cal.getWeek(id); return `<option value="${id}" ${id === selected ? 'selected' : ''}>${w.emoji} ${esc(w.name)} (${esc(weekRange(w))})</option>`; }).join('')}
+      ${ids.map((id) => { const w = cal.getWeek(id); return `<option value="${id}" ${id === selected ? 'selected' : ''}>${w.emoji} ${esc(w.name)} · ${esc(weekRange(w))}</option>`; }).join('')}
     </select></label>`;
 }
 
@@ -657,25 +657,31 @@ function viewScoreboard(weekId) {
   </section>
 
   <section class="block">
-    <div class="block-head"><h2>${w.emoji} ${esc(w.name)}</h2>${weekPicker(w.id, 'scoreboard-week')}</div>
-    <div class="table-wrap sticker">
-      <table class="scoreboard">
-        <thead><tr><th scope="col">Day</th>${players.map((p) => `<th scope="col">${avatar(p, 'sm')}<span>${esc(p.name)}</span></th>`).join('')}</tr></thead>
-        <tbody>
-          ${w.days.map((d) => `<tr style="--c:${d.color};--cd:${d.deep}">
-            <th scope="row">${canView(d.date) ? `<a href="${dayHref(w.id, d.day)}">` : '<span class="row-locked">'}<span class="dot"></span>${esc(cal.fmt(d.date, { weekday: 'short' }))} · ${canView(d.date) ? esc(d.title) : '🔒'}${canView(d.date) ? '</a>' : '</span>'}</th>
+    <h2>${w.emoji} ${esc(w.name)}</h2>
+    ${weekPicker(w.id, 'scoreboard-week')}
+    <div class="sb-list">
+      ${w.days.map((d) => {
+        const open = canView(d.date);
+        const label = `<span class="dot"></span><span><b>${esc(cal.fmt(d.date, { weekday: 'short' }))}</b> · ${open ? esc(d.title) : 'Mystery day 🔒'}</span>`;
+        return `<div class="sb-row ${open ? '' : 'locked'}" style="--c:${d.color};--cd:${d.deep}">
+          ${open ? `<a class="sb-day" href="${dayHref(w.id, d.day)}">${label}</a>` : `<span class="sb-day">${label}</span>`}
+          <div class="sb-scores">
             ${players.map((p) => {
               const s = dayScore(p.id, w, d.day);
               const sp = specialScore(p.id, w, d.day);
-              return `<td><b>${s}</b><span class="of">/400</span>${sp ? `<span class="star-pts">+${sp}⭐</span>` : ''}</td>`;
+              return `<span class="sb-score" title="${esc(p.name)}">${avatar(p, 'sm')}<b>${s}</b>${sp ? `<em>+${sp}⭐</em>` : ''}</span>`;
             }).join('')}
-          </tr>`).join('')}
-        </tbody>
-        <tfoot><tr><th scope="row">Week total</th>
-          ${players.map((p, i) => `<td class="${totals[i] === best && best > 0 ? 'leader' : ''}">${totals[i] === best && best > 0 ? '<span class="crown">👑</span>' : ''}<b>${totals[i].toLocaleString()}</b></td>`).join('')}
-        </tr></tfoot>
-      </table>
+          </div>
+        </div>`;
+      }).join('')}
+      <div class="sb-row total">
+        <span class="sb-day"><b>Week total</b></span>
+        <div class="sb-scores">
+          ${players.map((p, i) => `<span class="sb-score ${totals[i] === best && best > 0 ? 'leader' : ''}" title="${esc(p.name)}">${totals[i] === best && best > 0 ? '👑' : ''}${avatar(p, 'sm')}<b>${totals[i].toLocaleString()}</b></span>`).join('')}
+        </div>
+      </div>
     </div>
+    <p class="muted small">Each day is out of 400 points. ⭐ = special challenge points.</p>
   </section>
 
   <section class="block">
@@ -840,7 +846,8 @@ function viewGrownups() {
   </section>
 
   <section class="block">
-    <div class="block-head"><h2>Special daily challenges</h2>${weekPicker(w.id, 'gw-week')}</div>
+    <h2>Special daily challenges</h2>
+    ${weekPicker(w.id, 'gw-week')}
     <div class="day-tabs" role="tablist">
       ${w.days.map((x) => `<button role="tab" aria-selected="${x.day === day}" class="day-tab ${x.day === day ? 'on' : ''}" style="--c:${x.color}" data-action="gw-day" data-day="${x.day}">${esc(cal.fmt(x.date, { weekday: 'short' }))}</button>`).join('')}
     </div>

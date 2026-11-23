@@ -31,6 +31,7 @@
 
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
+html, body { overflow-x: clip; }
 body {
   margin: 0;
   font-family: var(--font-body);
@@ -106,7 +107,13 @@ img { display: block; max-width: 100%; }
 @media (max-width: 520px) {
   .brand-text { display: none; }
   .topbar { gap: var(--space-sm); }
-  .chip-name { max-width: 6ch; }
+  #player-bar .chips { flex-wrap: wrap; justify-content: flex-end; overflow: visible; gap: 6px; padding: 4px 0 6px; }
+  #player-bar .chips > :first-child { margin-left: 0; }
+  #player-bar .chip-name { max-width: 9ch; }
+  #player-bar .chip:not(.on):not(.add) { padding: 0; border: 0; min-height: 40px; background: none; }
+  #player-bar .chip:not(.on):not(.add) .avatar { width: 38px; height: 38px; }
+  #player-bar .chip:not(.on) .chip-name { display: none; }
+  #player-bar .chip.add { width: 40px; min-height: 40px; }
 }
 .chips { display: flex; gap: var(--space-sm); overflow-x: auto; padding: 4px 4px 6px; scrollbar-width: none; }
 .chips > :first-child { margin-left: auto; }
@@ -138,6 +145,7 @@ main {
   max-width: 980px; margin: 0 auto;
   padding: var(--space-xl) max(var(--space-lg), env(safe-area-inset-left));
   display: grid; gap: var(--space-2xl);
+  grid-template-columns: minmax(0, 1fr); /* nothing inside can widen the page */
   outline: none;
 }
 .block { display: grid; gap: var(--space-md); }
@@ -469,7 +477,7 @@ body.assigning .mission:hover { background: var(--day-soft); transform: translat
 /* ---------- grown-ups ---------- */
 
 .gate { max-width: 420px; }
-.day-tabs { display: flex; gap: 6px; overflow-x: auto; padding: 4px 2px 8px; }
+.day-tabs { display: flex; flex-wrap: wrap; gap: 6px; padding: 4px 2px 8px; }
 .day-tab {
   flex-shrink: 0; min-height: 44px; padding: 6px 14px;
   font-weight: 700; background: var(--card);
@@ -616,8 +624,8 @@ body.assigning .mission:hover { background: var(--day-soft); transform: translat
 .season-card.leader { background: color-mix(in oklch, var(--gold) 50%, var(--card)); }
 .season-card .crown { position: absolute; top: -18px; font-size: 1.6rem; }
 .season-pts { font-family: var(--font-display); font-size: 1.8rem; line-height: 1; }
-.week-pick select { min-height: 44px; max-width: 100%; }
-.week-pick { min-width: 0; }
+.week-pick { min-width: 0; width: 100%; max-width: 520px; }
+.week-pick select { width: 100%; min-width: 0; min-height: 48px; text-overflow: ellipsis; }
 
 .holiday-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-sm); }
 .holiday-list li { display: flex; align-items: center; gap: var(--space-md); flex-wrap: wrap; padding: var(--space-md) var(--space-lg); border-radius: var(--radius); }
@@ -642,10 +650,10 @@ a.week-card:hover { transform: translateX(4px); }
 /* ---------- photo gallery ---------- */
 
 .gallery-filters { display: grid; gap: var(--space-md); justify-items: start; }
-.filter-row { display: flex; gap: var(--space-sm); overflow-x: auto; max-width: 100%; padding: 2px 2px 6px; scrollbar-width: thin; }
+.filter-row { display: flex; flex-wrap: wrap; gap: var(--space-sm); max-width: 100%; padding: 2px 2px 6px; }
 .fchip {
-  flex-shrink: 0; min-height: 42px; padding: 6px 14px;
-  font-weight: 600; font-size: 0.92rem; white-space: nowrap;
+  min-height: 42px; max-width: 100%; padding: 6px 14px;
+  font-weight: 600; font-size: 0.92rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   background: var(--card); border: 2.5px solid var(--line); border-radius: 999px;
 }
 .fchip.on { background: var(--pc, var(--day)); box-shadow: var(--pop-sm); }
@@ -658,3 +666,31 @@ a.week-card:hover { transform: translateX(4px); }
 .pbadge { position: absolute; top: -12px; left: -10px; z-index: 1; transform: rotate(-8deg); }
 .lightbox figcaption .avatar { margin-right: 2px; }
 @media (max-width: 420px) { .nav { padding-left: 2px; padding-right: 2px; } .nav a { margin: 0 1px; font-size: 0.62rem; white-space: nowrap; letter-spacing: -0.01em; } .nav-icon { font-size: 1.3rem; } }
+
+/* ---------- scoreboard list (stacks on phones, no sideways scrolling) ---------- */
+
+.sb-list { display: grid; gap: var(--space-sm); }
+.sb-row {
+  display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-sm);
+  padding: var(--space-md) var(--space-lg);
+  background: color-mix(in oklch, var(--c) 18%, var(--card));
+  border: 2.5px solid var(--line); border-radius: 18px;
+}
+.sb-row.locked { background: var(--card); border-style: dashed; }
+.sb-day { display: flex; align-items: center; gap: 8px; min-width: 0; font-weight: 600; color: var(--cd); text-decoration: none; line-height: 1.25; }
+.sb-row.locked .sb-day { color: var(--ink-soft); }
+a.sb-day:hover span:last-child { text-decoration: underline; }
+.sb-day .dot { flex-shrink: 0; }
+.sb-scores { display: flex; flex-wrap: wrap; gap: var(--space-sm) var(--space-lg); }
+.sb-score { display: inline-flex; align-items: center; gap: 6px; font-size: 1.05rem; }
+.sb-score em { font-style: normal; font-weight: 700; font-size: 0.85rem; color: oklch(0.52 0.13 70); }
+.sb-row.total { background: var(--card); border-width: 3px; box-shadow: var(--pop-sm); }
+.sb-row.total .sb-day { color: var(--ink); font-family: var(--font-display); font-size: 1.2rem; }
+.sb-row.total b { font-family: var(--font-display); font-weight: 400; font-size: 1.5rem; }
+.sb-score.leader { padding: 2px 12px 2px 6px; background: var(--gold); border: 2px solid var(--line); border-radius: 999px; }
+@media (min-width: 640px) {
+  .sb-row { grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
+  .sb-scores { justify-content: flex-end; }
+}
+.season-card { min-width: 0; }
+.season-card b { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
